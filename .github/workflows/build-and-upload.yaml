@@ -1,0 +1,93 @@
+name: Build and upload to App Store Connect
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    env:
+      APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }} # Admin API key ID
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }} # Admin API key (via https://appstoreconnect.apple.com/access/integrations/api)
+      APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }} # UUID (via https://appstoreconnect.apple.com/access/integrations/api)
+      APPSTORE_TEAM_ID: ${{ secrets.APPSTORE_TEAM_ID }} # 10 digit alphanumeric (via https://developer.apple.com/account#MembershipDetailsCard)
+      IOS_BUILD_ZIP_URL: ${{ secrets.IOS_BUILD_ZIP_URL }} # e.g. a pre-signed url
+      IPA_FILENAME: ${{ secrets.IPA_FILENAME }} # e.g. MyGame.ipa
+
+    steps:
+      - name: Log macOS version
+        run: |
+          sw_vers
+          uname -a
+
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      # iOS zip built by Unity
+      - name: Download iOS build
+        run: |
+          curl -L "$IOS_BUILD_ZIP_URL" -o build.zip
+
+      - name: Unzip iOS build
+        run: |
+          unzip build.zip
+
+      # CocoaPods for AdMob
+      - name: Set up CocoaPods
+        run: |
+          sudo gem install cocoapods
+          pod --version
+
+      - name: Install Pods (~10 min)
+        run: |
+          pod install
+
+      # Xcode to build and upload
+      - name: Set up Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app
+          xcodebuild -version
+
+      - name: Inject Team ID into ExportOptions.plist
+        run: |
+          # Replace placeholder {{TEAM_ID}}
+          sed -i '' "s|{{TEAM_ID}}|${APPSTORE_TEAM_ID}|g" ExportOptions.plist
+
+      - name: Write API key to file (in this location so altool can find it)
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$APPSTORE_API_PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8
+
+      - name: Build archive (~9 min)
+        run: |
+          xcodebuild archive \
+            -workspace Unity-iPhone.xcworkspace \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/Unity-iPhone.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
+            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8" \
+            DEVELOPMENT_TEAM="$APPSTORE_TEAM_ID"
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/Unity-iPhone.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_ISSUER_ID" \
+            -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+
+      - name: Upload to App Store Connect
+        run: |
+          xcrun altool --upload-app \
+            -f "build/$IPA_FILENAME" \
+            -t ios \
+            --apiKey "$APPSTORE_API_KEY_ID" \
+            --apiIssuer "$APPSTORE_ISSUER_ID"
