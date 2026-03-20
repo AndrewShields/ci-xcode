@@ -1,0 +1,14 @@
+name: Check MacOS version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-upload:
+    runs-on: macos-latest
+
+    steps:
+      - name: Log macOS version
+        run: |
+          sw_vers
+          uname -a
