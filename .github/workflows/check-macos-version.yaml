@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-upload:
-    runs-on: macos-latest
+  check-macos-version:
+    runs-on: macos-26
 
     steps:
       - name: Log macOS version
