@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-and-upload:
-    runs-on: macos-latest
+    runs-on: macos-26
     environment: prod
     env:
       APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }} # Admin API key ID
