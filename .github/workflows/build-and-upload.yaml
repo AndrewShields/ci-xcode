@@ -5,7 +5,9 @@ on:
 
 jobs:
   build-and-upload:
+    # Remember to update the Xcode version below to match
     runs-on: macos-26
+
     environment: prod
     env:
       APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }} # Admin API key ID
@@ -46,7 +48,7 @@ jobs:
       # Xcode to build and upload
       - name: Set up Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_16.4.app
+          sudo xcode-select -s /Applications/Xcode_26.4.app
           xcodebuild -version
 
       - name: Inject Team ID into ExportOptions.plist
