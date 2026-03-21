@@ -1,4 +1,4 @@
-name: Check MacOS version
+name: Check macOS version
 
 on:
   workflow_dispatch:
@@ -12,3 +12,8 @@ jobs:
         run: |
           sw_vers
           uname -a
+
+    steps:
+      - name: Log Xcode apps
+        run: |
+          ls -d /Applications/Xcode*.app
