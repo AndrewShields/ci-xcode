@@ -46,9 +46,10 @@ jobs:
           pod install
 
       # Xcode to build and upload
+      # https://github.com/actions/runner-images/releases
       - name: Set up Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode_26.4.app
+          sudo xcode-select -s /Applications/Xcode_26.3.app
           xcodebuild -version
 
       - name: Inject Team ID into ExportOptions.plist
