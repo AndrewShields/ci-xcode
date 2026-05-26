@@ -16,3 +16,8 @@ Use GitHub Actions to build a Unity iOS project and upload it to App Store Conne
 ## Run (manual trigger)
 
 * Repo > Actions > Build and upload to App Store Connect > Run workflow
+
+## Cleanup
+
+* Periodically deleted certs created via API or you'll hit a limit around ~10
+	* https://developer.apple.com/account/resources/certificates/list
